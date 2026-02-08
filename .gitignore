@@ -1,0 +1,23 @@
+# Java
+*.class
+bin/
+out/
+build/
+*.jar
+*.war
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# Eclipse
+.project
+.classpath
+.settings/

@@ -1,0 +1,173 @@
+@startuml JabberPoint Class Diagram
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam packageStyle rectangle
+
+title JabberPoint - Class Diagram (Current State)
+
+package "Core Model" {
+    class Presentation {
+        - showTitle: String
+        - showList: ArrayList<Slide>
+        - currentSlideNumber: int
+        - slideViewComponent: SlideViewerComponent
+        --
+        + getSize(): int
+        + getTitle(): String
+        + setTitle(String): void
+        + setShowView(SlideViewerComponent): void
+        + getSlideNumber(): int
+        + setSlideNumber(int): void
+        + prevSlide(): void
+        + nextSlide(): void
+        + clear(): void
+        + append(Slide): void
+        + getSlide(int): Slide
+        + getCurrentSlide(): Slide
+        + exit(int): void
+    }
+
+    class Slide {
+        - title: String
+        - items: Vector<SlideItem>
+        --
+        + {static} WIDTH: int
+        + {static} HEIGHT: int
+        + append(SlideItem): void
+        + append(int, String): void
+        + getTitle(): String
+        + setTitle(String): void
+        + getSlideItem(int): SlideItem
+        + getSlideItems(): Vector<SlideItem>
+        + getSize(): int
+        + draw(Graphics, Rectangle, ImageObserver): void
+    }
+
+    abstract class SlideItem {
+        - level: int
+        --
+        + getLevel(): int
+        + {abstract} getBoundingBox(...): Rectangle
+        + {abstract} draw(...): void
+    }
+
+    class TextItem {
+        - text: String
+        --
+        + getText(): String
+        + getAttributedString(Style, float): AttributedString
+        + getBoundingBox(...): Rectangle
+        + draw(...): void
+    }
+
+    class BitmapItem {
+        - bufferedImage: BufferedImage
+        - imageName: String
+        --
+        + getName(): String
+        + getBoundingBox(...): Rectangle
+        + draw(...): void
+    }
+
+    class Style {
+        - indent: int
+        - color: Color
+        - font: Font
+        - fontSize: int
+        - leading: int
+        - {static} styles: Style[]
+        --
+        + {static} createStyles(): void
+        + {static} getStyle(int): Style
+        + getFont(float): Font
+    }
+}
+
+package "Persistence" {
+    abstract class Accessor {
+        + {static} getDemoAccessor(): Accessor
+        + {abstract} loadFile(Presentation, String): void
+        + {abstract} saveFile(Presentation, String): void
+    }
+
+    class XMLAccessor {
+        + loadFile(Presentation, String): void
+        + saveFile(Presentation, String): void
+        - loadSlideItem(Slide, Element): void
+    }
+
+    class DemoPresentation {
+        + loadFile(Presentation, String): void
+        + saveFile(Presentation, String): void
+    }
+}
+
+package "View" {
+    class SlideViewerFrame {
+        + setupWindow(SlideViewerComponent, Presentation): void
+    }
+
+    class SlideViewerComponent {
+        - slide: Slide
+        - presentation: Presentation
+        - frame: JFrame
+        --
+        + update(Presentation, Slide): void
+        + paintComponent(Graphics): void
+    }
+
+    class KeyController {
+        - presentation: Presentation
+        --
+        + keyPressed(KeyEvent): void
+    }
+
+    class MenuController {
+        - parent: Frame
+        - presentation: Presentation
+        --
+        + mkMenuItem(String): MenuItem
+    }
+
+    class AboutBox {
+        + {static} show(Frame): void
+    }
+}
+
+package "Main" {
+    class JabberPoint {
+        + {static} main(String[]): void
+    }
+}
+
+' Relationships - Composition
+Presentation "1" *-- "0..*" Slide : showList
+Slide "1" *-- "0..*" SlideItem : items
+
+' Relationships - Inheritance
+SlideItem <|-- TextItem
+SlideItem <|-- BitmapItem
+Accessor <|-- XMLAccessor
+Accessor <|-- DemoPresentation
+
+' Relationships - Association
+Presentation o-- SlideViewerComponent : slideViewComponent
+SlideViewerFrame *-- SlideViewerComponent
+SlideViewerFrame --> Presentation
+KeyController --> Presentation
+MenuController --> Presentation
+
+' Relationships - Dependency
+Slide ..> Style : getStyle
+SlideItem ..> Style : draw, getBoundingBox
+JabberPoint ..> Presentation : creates
+JabberPoint ..> SlideViewerFrame : creates
+JabberPoint ..> Accessor : uses
+JabberPoint ..> XMLAccessor : uses
+XMLAccessor ..> Slide : creates
+XMLAccessor ..> TextItem : creates
+XMLAccessor ..> BitmapItem : creates
+Slide ..> TextItem : creates (title)
+
+@enduml

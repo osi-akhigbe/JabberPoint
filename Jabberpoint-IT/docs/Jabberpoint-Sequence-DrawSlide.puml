@@ -1,0 +1,22 @@
+@startuml JabberPoint-Sequence-DrawSlide
+title Draw Slide (Rendering)
+
+participant SlideViewerComponent
+participant Presentation
+participant Slide
+participant Style
+participant "SlideItem" as SI
+
+SlideViewerComponent -> SlideViewerComponent: paintComponent(g)
+SlideViewerComponent -> Presentation: getSlideNumber()
+SlideViewerComponent -> Slide: draw(g, area, this)
+Slide -> Slide: getScale(area)
+Slide -> Style: getStyle(level)
+Slide -> SI: draw(x, y, scale, g, style, view)
+loop for each slide item
+    Slide -> Slide: getSlideItem(number)
+    Slide -> Style: getStyle(level)
+    Slide -> SI: draw(x, y, scale, g, style, view)
+    Slide -> SI: getBoundingBox(...)
+end
+@enduml

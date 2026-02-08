@@ -1,0 +1,47 @@
+' This file contains multiple sequence diagrams.
+' Split into separate files or use PlantUML with -split option.
+' Or copy each @startuml block to its own .puml file.
+
+@startuml JabberPoint-Sequence-Startup
+title Application Startup and Load Presentation
+
+actor User
+participant "JabberPoint" as JP
+participant Style
+participant Presentation
+participant SlideViewerFrame
+participant SlideViewerComponent
+participant "Accessor" as Acc
+
+User -> JP: main(argv)
+JP -> Style: createStyles()
+JP -> Presentation: new Presentation()
+JP -> SlideViewerFrame: new SlideViewerFrame(title, presentation)
+SlideViewerFrame -> SlideViewerComponent: new SlideViewerComponent(presentation, this)
+SlideViewerFrame -> Presentation: setShowView(slideViewerComponent)
+SlideViewerFrame -> SlideViewerFrame: setupWindow(...)
+
+alt Demo (argv.length == 0)
+    JP -> Acc: getDemoAccessor()
+    Acc --> JP: DemoPresentation
+    JP -> Acc: loadFile(presentation, "")
+    Acc -> Presentation: setTitle("Demo Presentation")
+    loop 3 slides
+        Acc -> Presentation: append(slide)
+    end
+else Load XML (argv.length > 0)
+    JP -> Acc: new XMLAccessor()
+    JP -> Acc: loadFile(presentation, filename)
+    Acc -> Presentation: setTitle(...)
+    loop for each slide
+        Acc -> Presentation: append(slide)
+        loop for each item
+            Acc -> Acc: loadSlideItem(slide, item)
+        end
+    end
+end
+
+JP -> Presentation: setSlideNumber(0)
+Presentation -> SlideViewerComponent: update(this, getCurrentSlide())
+SlideViewerComponent -> SlideViewerComponent: repaint()
+@enduml

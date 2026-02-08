@@ -1,0 +1,30 @@
+@startuml JabberPoint-Sequence-SaveFile
+title Save Presentation
+
+actor User
+participant MenuController
+participant XMLAccessor
+participant Presentation
+participant Slide
+participant "SlideItem" as SI
+
+User -> MenuController: actionPerformed(Save)
+MenuController -> XMLAccessor: new XMLAccessor()
+MenuController -> XMLAccessor: saveFile(presentation, "dump.xml")
+XMLAccessor -> Presentation: getTitle()
+XMLAccessor -> Presentation: getSize()
+loop for each slide
+    XMLAccessor -> Presentation: getSlide(number)
+    XMLAccessor -> Slide: getTitle()
+    XMLAccessor -> Slide: getSlideItems()
+    loop for each item
+        XMLAccessor -> SI: getLevel()
+        alt TextItem
+            XMLAccessor -> SI: getText()
+        else BitmapItem
+            XMLAccessor -> SI: getName()
+        end
+    end
+end
+XMLAccessor -> XMLAccessor: write XML to file
+@enduml

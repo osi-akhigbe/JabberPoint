@@ -1,0 +1,24 @@
+@startuml JabberPoint-Sequence-OpenFile
+title Open File from Menu
+
+actor User
+participant MenuController
+participant Presentation
+participant XMLAccessor
+participant Slide
+
+User -> MenuController: actionPerformed(Open)
+MenuController -> Presentation: clear()
+MenuController -> XMLAccessor: new XMLAccessor()
+MenuController -> XMLAccessor: loadFile(presentation, "test.xml")
+XMLAccessor -> Presentation: setTitle(...)
+loop for each slide in XML
+    XMLAccessor -> Slide: new Slide()
+    XMLAccessor -> Presentation: append(slide)
+    loop for each item
+        XMLAccessor -> Slide: append(TextItem/BitmapItem)
+    end
+end
+MenuController -> Presentation: setSlideNumber(0)
+MenuController -> MenuController: parent.repaint()
+@enduml

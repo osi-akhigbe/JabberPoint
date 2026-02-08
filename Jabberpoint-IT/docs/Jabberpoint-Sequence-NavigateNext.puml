@@ -1,0 +1,19 @@
+@startuml JabberPoint-Sequence-NavigateNext
+title Navigate to Next Slide (Keyboard)
+
+actor User
+participant KeyController
+participant Presentation
+participant SlideViewerComponent
+participant Slide
+
+User -> KeyController: keyPressed(PAGE_DOWN/ENTER/DOWN/+)
+KeyController -> Presentation: nextSlide()
+Presentation -> Presentation: setSlideNumber(currentSlideNumber + 1)
+Presentation -> SlideViewerComponent: update(this, getCurrentSlide())
+Presentation -> Presentation: getCurrentSlide()
+Presentation -> Presentation: getSlide(number)
+Presentation --> SlideViewerComponent: slide
+SlideViewerComponent -> SlideViewerComponent: repaint()
+SlideViewerComponent -> Slide: draw(g, area, this)
+@enduml

@@ -1,0 +1,50 @@
+@startuml JabberPoint Use Case Diagram
+!theme plain
+left to right direction
+skinparam packageStyle rectangle
+
+title JabberPoint - Use Case Diagram (Current State)
+
+actor "User" as user
+
+rectangle "JabberPoint Presentation System" {
+    usecase "View presentation" as UC_View
+    usecase "Navigate next slide" as UC_Next
+    usecase "Navigate previous slide" as UC_Prev
+    usecase "Go to slide" as UC_Goto
+    usecase "Open presentation" as UC_Open
+    usecase "New presentation" as UC_New
+    usecase "Save presentation" as UC_Save
+    usecase "Exit application" as UC_Exit
+    usecase "View about" as UC_About
+
+    UC_View ..> UC_Next : <<include>>
+    UC_View ..> UC_Prev : <<include>>
+    UC_View ..> UC_Goto : <<extend>>
+    UC_View ..> UC_Exit : <<include>>
+
+    user --> UC_View
+    user --> UC_Open
+    user --> UC_New
+    user --> UC_Save
+    user --> UC_About
+}
+
+note right of UC_View
+  Main use case: user views slides
+  Navigation: PgDn, Enter, Down, +
+  Previous: PgUp, Up, -
+  Quit: Q
+end note
+
+note bottom of UC_Open
+  File → Open
+  Loads test.xml
+end note
+
+note bottom of UC_Save
+  File → Save
+  Saves to dump.xml
+end note
+
+@enduml

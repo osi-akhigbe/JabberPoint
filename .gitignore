@@ -21,3 +21,6 @@ build/
 .project
 .classpath
 .settings/
+
+# Generated diagram images (run docs/generate-diagrams.sh to create)
+Jabberpoint-IT/docs/diagrams/

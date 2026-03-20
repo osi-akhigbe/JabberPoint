@@ -1,0 +1,101 @@
+name: DTAP CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "release/**"
+      - "hotfix/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+      - "release/**"
+
+permissions:
+  contents: read
+
+jobs:
+  development:
+    name: Development (D) - Build checks
+    if: ${{ startsWith(github.ref, 'refs/heads/develop') || startsWith(github.ref, 'refs/heads/feature/') || startsWith(github.ref, 'refs/heads/hotfix/') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Compile source (D gate)
+        run: |
+          mkdir -p build/classes
+          javac -d build/classes Jabberpoint-IT/src/*.java
+
+      - name: Verify required docs exist
+        run: |
+          test -f Jabberpoint-IT/CODING-CONVENTIONS.md
+          test -f WORKFLOW.docx
+          test -f SYSTEM-ANALYSIS.docx
+
+  test_and_acceptance:
+    name: Test/Acceptance (T/A) - Release validation
+    if: ${{ startsWith(github.ref, 'refs/heads/release/') || (github.event_name == 'pull_request' && github.base_ref == 'main') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Compile source (T gate)
+        run: |
+          mkdir -p build/classes
+          javac -Xlint:all -d build/classes Jabberpoint-IT/src/*.java
+
+      - name: Package source artifact for review
+        run: |
+          tar -czf jabberpoint-release-candidate.tgz Jabberpoint-IT/src Jabberpoint-IT/docs Jabberpoint-IT/README.md
+
+      - name: Upload release-candidate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-candidate
+          path: jabberpoint-release-candidate.tgz
+
+  production:
+    name: Production (P) - Main branch protection gate
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Compile source (P gate)
+        run: |
+          mkdir -p build/classes
+          javac -Xlint:all -Werror -d build/classes Jabberpoint-IT/src/*.java
+
+      - name: Confirm release documents
+        run: |
+          test -f ADVICE.docx
+          test -f WORKFLOW.docx
+          test -f SYSTEM-ANALYSIS.docx

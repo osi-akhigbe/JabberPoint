@@ -20,6 +20,8 @@ Astah can generate the class diagram directly from the Java source code:
 8. Use **Alignment → Auto Layout** to arrange the diagram
 9. Save as `.asta` (e.g., `Jabberpoint-ClassDiagram.asta`)
 
+**Empty boxes (JFrame, Frame, Rectangle, Graphics, etc.):** After importing from Java, Astah adds the project’s classes plus the JDK types they use or extend (e.g. `JFrame`, `Frame`, `Rectangle`, `Graphics`, `JComponent`, `MenuBar`, `KeyAdapter`). Those JDK types often appear as **empty or nearly empty** boxes because Astah doesn’t have their source. To keep the diagram focused on JabberPoint only, remove those from the diagram: in the diagram editor, select the boxes for `JFrame`, `Frame`, `Rectangle`, `Graphics`, `JComponent`, `MenuBar`, `KeyAdapter`, etc. and delete them from the diagram (or move them to an “External” package and collapse/hide it). The project classes (Presentation, Slide, SlideViewerFrame, etc.) will keep their relationships; you’re only removing the library classes from the view.
+
 ### Method B: Manual Class Diagram Specification
 
 If you prefer to draw manually, here is the complete structure:

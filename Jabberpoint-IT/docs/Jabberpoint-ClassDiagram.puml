@@ -4,19 +4,28 @@ skinparam classAttributeIconSize 0
 skinparam classFontStyle bold
 skinparam packageStyle rectangle
 
-title JabberPoint - Class Diagram (Current State)
+title JabberPoint - Class Diagram (Improved Design)
 
 package "Core Model" {
+    interface SlideChangeListener {
+        + slideChanged(Presentation, Slide): void
+    }
+
+    interface SlideChangeSubject {
+        + addSlideChangeListener(SlideChangeListener): void
+        + removeSlideChangeListener(SlideChangeListener): void
+        + notifySlideChange(): void
+    }
+
     class Presentation {
         - showTitle: String
         - showList: ArrayList<Slide>
         - currentSlideNumber: int
-        - slideViewComponent: SlideViewerComponent
         --
         + getSize(): int
         + getTitle(): String
         + setTitle(String): void
-        + setShowView(SlideViewerComponent): void
+        + setShowView(SlideChangeListener): void
         + getSlideNumber(): int
         + setSlideNumber(int): void
         + prevSlide(): void
@@ -70,7 +79,7 @@ package "Core Model" {
         + draw(...): void
     }
 
-    class Style {
+    class Style <<singleton>> {
         - indent: int
         - color: Color
         - font: Font
@@ -78,6 +87,7 @@ package "Core Model" {
         - leading: int
         - {static} styles: Style[]
         --
+        + {static} getInstance(): Style
         + {static} createStyles(): void
         + {static} getStyle(int): Style
         + getFont(float): Font
@@ -85,7 +95,7 @@ package "Core Model" {
 }
 
 package "Persistence" {
-    abstract class Accessor {
+    abstract class Accessor <<strategy>> {
         + {static} getDemoAccessor(): Accessor
         + {abstract} loadFile(Presentation, String): void
         + {abstract} saveFile(Presentation, String): void
@@ -100,6 +110,10 @@ package "Persistence" {
     class DemoPresentation {
         + loadFile(Presentation, String): void
         + saveFile(Presentation, String): void
+    }
+
+    class AccessorSelector <<context>> {
+        + forFilename(String): Accessor
     }
 }
 
@@ -150,9 +164,11 @@ SlideItem <|-- TextItem
 SlideItem <|-- BitmapItem
 Accessor <|-- XMLAccessor
 Accessor <|-- DemoPresentation
+SlideChangeSubject <|.. Presentation
+SlideChangeListener <|.. SlideViewerComponent
 
 ' Relationships - Association
-Presentation o-- SlideViewerComponent : slideViewComponent
+SlideChangeSubject o-- SlideChangeListener : listeners
 SlideViewerFrame *-- SlideViewerComponent
 SlideViewerFrame --> Presentation
 KeyController --> Presentation
@@ -165,6 +181,9 @@ JabberPoint ..> Presentation : creates
 JabberPoint ..> SlideViewerFrame : creates
 JabberPoint ..> Accessor : uses
 JabberPoint ..> XMLAccessor : uses
+JabberPoint ..> AccessorSelector : selects strategy
+MenuController ..> AccessorSelector : selects strategy
+AccessorSelector ..> Accessor : returns
 XMLAccessor ..> Slide : creates
 XMLAccessor ..> TextItem : creates
 XMLAccessor ..> BitmapItem : creates

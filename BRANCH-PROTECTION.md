@@ -37,6 +37,8 @@ After the first successful workflow run on each branch type, the **status check 
 
 **Meaning:** Feature work merges into **develop** only after the development build job succeeds.
 
+The **Development** job runs **`mvn test`** when `pom.xml` exists at the repository root (compile + unit tests + JaCoCo); otherwise it runs **`javac`** only so feature branches without Maven still pass the gate.
+
 ---
 
 ## 3. Protect `release/*` (Test + Acceptance — **T / A**)

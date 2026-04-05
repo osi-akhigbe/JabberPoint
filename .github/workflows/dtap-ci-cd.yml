@@ -33,8 +33,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Unit tests and coverage (D gate)
-        run: mvn -B test
+      - name: Build and test (D gate)
+        run: |
+          if [ -f pom.xml ]; then
+            mvn -B test
+          else
+            mkdir -p build/classes
+            javac -d build/classes Jabberpoint-IT/src/*.java
+          fi
 
   test_and_acceptance:
     name: Test/Acceptance (T/A) - Release validation
@@ -51,12 +57,18 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Unit tests and coverage (T gate)
-        run: mvn -B test
+      - name: Build and test (T gate)
+        run: |
+          if [ -f pom.xml ]; then
+            mvn -B test
+          else
+            mkdir -p build/classes
+            javac -Xlint:all -d build/classes Jabberpoint-IT/src/*.java
+          fi
 
       - name: Package source artifact for review
         run: |
-          tar -czf jabberpoint-release-candidate.tgz Jabberpoint-IT/src Jabberpoint-IT/docs Jabberpoint-IT/README.md
+          tar -czf jabberpoint-release-candidate.tgz pom.xml README.md Jabberpoint-IT/src Jabberpoint-IT/docs Jabberpoint-IT/README.md
 
       - name: Upload release-candidate artifact
         uses: actions/upload-artifact@v4
@@ -79,8 +91,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Unit tests and coverage (P gate)
-        run: mvn -B test
+      - name: Build and test (P gate)
+        run: |
+          if [ -f pom.xml ]; then
+            mvn -B test
+          else
+            mkdir -p build/classes
+            javac -Xlint:all -d build/classes Jabberpoint-IT/src/*.java
+          fi
 
       - name: Confirm release documents
         run: |

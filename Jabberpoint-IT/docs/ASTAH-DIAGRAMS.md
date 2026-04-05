@@ -31,20 +31,24 @@ If you prefer to draw manually, here is the complete structure:
 | Class | Superclass | Key Attributes | Key Methods |
 |-------|------------|----------------|-------------|
 | **JabberPoint** | — | JABVERSION, IOERR, JABERR | main(String[]) |
-| **Presentation** | — | showTitle, showList (ArrayList<Slide>), currentSlideNumber, slideViewComponent | getSize(), getTitle(), setTitle(), setShowView(), getSlideNumber(), setSlideNumber(), prevSlide(), nextSlide(), clear(), append(), getSlide(), getCurrentSlide(), exit() |
+| **Presentation** | — | showTitle, showList (ArrayList<Slide>), currentSlideNumber, slideChangeListeners; implements **SlideChangeSubject** | addSlideChangeListener(), removeSlideChangeListener(), getSize(), getTitle(), setTitle(), getSlideNumber(), setSlideNumber(), prevSlide(), nextSlide(), clear(), append(), getSlide(), getCurrentSlide(), exit() |
 | **Slide** | — | title, items (Vector<SlideItem>) | append(), getTitle(), setTitle(), getSlideItem(), getSlideItems(), getSize(), draw() |
 | **SlideItem** | — (abstract) | level | getLevel(), getBoundingBox(), draw() [abstract] |
 | **TextItem** | SlideItem | text | getText(), getAttributedString(), getBoundingBox(), draw() |
 | **BitmapItem** | SlideItem | bufferedImage, imageName | getName(), getBoundingBox(), draw() |
-| **Style** | — | indent, color, font, fontSize, leading | createStyles(), getStyle(), getFont() |
+| **Style** | — | indent, color, font, fontSize, leading | getFont() |
+| **StyleManager** | — | (singleton) styles table | getInstance(), getStyle(int) |
 | **Accessor** | — (abstract) | — | getDemoAccessor(), loadFile(), saveFile() [abstract] |
 | **XMLAccessor** | Accessor | — | loadFile(), saveFile(), loadSlideItem() |
+| **AccessorSelector** | — | — | forFilename(String): Accessor |
 | **DemoPresentation** | Accessor | — | loadFile(), saveFile() |
 | **SlideViewerFrame** | JFrame | — | setupWindow() |
-| **SlideViewerComponent** | JComponent | slide, presentation, frame | update(), paintComponent() |
+| **SlideViewerComponent** | JComponent | slide, presentation, frame | slideChanged(), update(), paintComponent() |
 | **KeyController** | KeyAdapter | presentation | keyPressed() |
 | **MenuController** | MenuBar | parent, presentation | mkMenuItem(), action listeners |
 | **AboutBox** | — | — | show(Frame) |
+| **SlideChangeListener** | — (interface) | — | slideChanged(Presentation, Slide) |
+| **SlideChangeSubject** | — (interface) | — | addSlideChangeListener(), removeSlideChangeListener() |
 
 #### Relationships
 
@@ -54,14 +58,16 @@ If you prefer to draw manually, here is the complete structure:
 - **SlideItem** ◇── BitmapItem (generalization)
 - **Accessor** ◇── XMLAccessor (generalization)
 - **Accessor** ◇── DemoPresentation (generalization)
-- **Presentation** ───> SlideViewerComponent (association: slideViewComponent)
+- **Presentation** ◇── SlideChangeSubject (realization); **Presentation** o── SlideChangeListener (observers)
 - **SlideViewerFrame** ───1── SlideViewerComponent (composition)
-- **SlideViewerFrame** ───> Presentation (association)
+- **SlideViewerFrame** ───> Presentation (association); registers **SlideViewerComponent** as **SlideChangeListener**
 - **KeyController** ───> Presentation (association)
 - **MenuController** ───> Presentation (association)
-- **Slide** ───> Style (dependency: getStyle)
+- **Slide** ───> StyleManager (dependency: getStyle)
 - **SlideItem** ───> Style (dependency: draw, getBoundingBox)
-- **JabberPoint** ───> Presentation, Accessor, XMLAccessor, SlideViewerFrame (creation/dependency)
+- **JabberPoint** ───> Presentation, AccessorSelector, StyleManager, SlideViewerFrame (creation/dependency)
+- **MenuController** ───> AccessorSelector (dependency)
+- **AccessorSelector** ───> Accessor (returns strategy)
 - **XMLAccessor** ───> Slide, TextItem, BitmapItem (creation)
 
 ---
@@ -108,14 +114,14 @@ If you prefer to draw manually, here is the complete structure:
 
 ```
 Actor: User
-Participants: JabberPoint, Style, Presentation, SlideViewerFrame, SlideViewerComponent, Accessor/XMLAccessor/DemoPresentation
+Participants: JabberPoint, StyleManager, Presentation, SlideViewerFrame, SlideViewerComponent, AccessorSelector, Accessor, XMLAccessor/DemoPresentation
 
 User -> JabberPoint: main(argv)
-JabberPoint -> Style: createStyles()
+JabberPoint -> StyleManager: getInstance()
 JabberPoint -> Presentation: new Presentation()
 JabberPoint -> SlideViewerFrame: new SlideViewerFrame(title, presentation)
 SlideViewerFrame -> SlideViewerComponent: new SlideViewerComponent(presentation, this)
-SlideViewerFrame -> Presentation: setShowView(slideViewerComponent)
+SlideViewerFrame -> Presentation: addSlideChangeListener(slideViewerComponent)
 SlideViewerFrame -> SlideViewerFrame: setupWindow(...)
 
 alt argv.length == 0
@@ -125,7 +131,8 @@ alt argv.length == 0
     DemoPresentation -> Presentation: setTitle(...)
     DemoPresentation -> Presentation: append(slide) [x3]
 else argv.length > 0
-    JabberPoint -> XMLAccessor: new XMLAccessor()
+    JabberPoint -> AccessorSelector: forFilename(filename)
+    AccessorSelector --> JabberPoint: Accessor (XMLAccessor)
     JabberPoint -> XMLAccessor: loadFile(presentation, filename)
     XMLAccessor -> Presentation: setTitle(...)
     loop for each slide
@@ -152,10 +159,8 @@ Participants: KeyController, Presentation, SlideViewerComponent, Slide
 User -> KeyController: keyPressed(PAGE_DOWN/ENTER/DOWN/+)
 KeyController -> Presentation: nextSlide()
 Presentation -> Presentation: setSlideNumber(currentSlideNumber + 1)
-Presentation -> SlideViewerComponent: update(this, getCurrentSlide())
-Presentation -> Presentation: getCurrentSlide()
-Presentation -> Presentation: getSlide(number)
-Presentation --> SlideViewerComponent: slide
+Presentation -> SlideViewerComponent: slideChanged(this, getCurrentSlide())
+SlideViewerComponent -> SlideViewerComponent: update(presentation, slide)
 SlideViewerComponent -> SlideViewerComponent: repaint()
 SlideViewerComponent -> Slide: draw(g, area, this)
 ```
@@ -164,12 +169,13 @@ SlideViewerComponent -> Slide: draw(g, area, this)
 
 ```
 Actor: User
-Participants: MenuController, Presentation, XMLAccessor, JOptionPane
+Participants: MenuController, Presentation, AccessorSelector, Accessor, XMLAccessor, JOptionPane
 
 User -> MenuController: actionPerformed(Open)
 MenuController -> Presentation: clear()
 Presentation -> Presentation: clear() [new ArrayList, setSlideNumber(-1)]
-MenuController -> XMLAccessor: new XMLAccessor()
+MenuController -> AccessorSelector: forFilename("test.xml")
+AccessorSelector --> MenuController: Accessor
 MenuController -> XMLAccessor: loadFile(presentation, "test.xml")
 XMLAccessor -> Presentation: setTitle(...)
 loop for each slide in XML
@@ -186,19 +192,20 @@ MenuController -> parent: repaint()
 ### 3.4 Sequence: Draw Slide (Rendering)
 
 ```
-Participants: SlideViewerComponent, Slide, Style, TextItem, BitmapItem
+Participants: SlideViewerComponent, Slide, StyleManager, Style, TextItem, BitmapItem
 
 SlideViewerComponent -> SlideViewerComponent: paintComponent(g)
 SlideViewerComponent -> Presentation: getSlideNumber()
 SlideViewerComponent -> Slide: draw(g, area, this)
 Slide -> Slide: getScale(area)
 Slide -> TextItem: new TextItem(0, getTitle()) [for title]
-Slide -> Style: getStyle(slideItem.getLevel())
+Slide -> StyleManager: getInstance().getStyle(slideItem.getLevel())
+StyleManager --> Slide: Style
 Slide -> TextItem: draw(x, y, scale, g, style, view)
 Slide -> TextItem: getBoundingBox(...)
 loop for each slide item
     Slide -> Slide: getSlideItem(number)
-    Slide -> Style: getStyle(level)
+    Slide -> StyleManager: getInstance().getStyle(level)
     Slide -> SlideItem: draw(x, y, scale, g, style, view)
     Slide -> SlideItem: getBoundingBox(...)
 end
@@ -208,10 +215,11 @@ end
 
 ```
 Actor: User
-Participants: MenuController, XMLAccessor, Presentation, Slide, SlideItem
+Participants: MenuController, AccessorSelector, Accessor, XMLAccessor, Presentation, Slide, SlideItem
 
 User -> MenuController: actionPerformed(Save)
-MenuController -> XMLAccessor: new XMLAccessor()
+MenuController -> AccessorSelector: forFilename("dump.xml")
+AccessorSelector --> MenuController: Accessor
 MenuController -> XMLAccessor: saveFile(presentation, "dump.xml")
 XMLAccessor -> Presentation: getTitle()
 XMLAccessor -> Presentation: getSize()

@@ -14,7 +14,6 @@ package "Core Model" {
     interface SlideChangeSubject {
         + addSlideChangeListener(SlideChangeListener): void
         + removeSlideChangeListener(SlideChangeListener): void
-        + notifySlideChange(): void
     }
 
     class Presentation {
@@ -25,7 +24,6 @@ package "Core Model" {
         + getSize(): int
         + getTitle(): String
         + setTitle(String): void
-        + setShowView(SlideChangeListener): void
         + getSlideNumber(): int
         + setSlideNumber(int): void
         + prevSlide(): void
@@ -79,18 +77,20 @@ package "Core Model" {
         + draw(...): void
     }
 
-    class Style <<singleton>> {
+    class Style {
         - indent: int
         - color: Color
         - font: Font
         - fontSize: int
         - leading: int
-        - {static} styles: Style[]
         --
-        + {static} getInstance(): Style
-        + {static} createStyles(): void
-        + {static} getStyle(int): Style
         + getFont(float): Font
+    }
+
+    class StyleManager <<singleton>> {
+        --
+        + {static} getInstance(): StyleManager
+        + getStyle(int): Style
     }
 }
 
@@ -175,13 +175,14 @@ KeyController --> Presentation
 MenuController --> Presentation
 
 ' Relationships - Dependency
-Slide ..> Style : getStyle
+Slide ..> StyleManager : getStyle(level)
 SlideItem ..> Style : draw, getBoundingBox
+StyleManager ..> Style : creates table
 JabberPoint ..> Presentation : creates
 JabberPoint ..> SlideViewerFrame : creates
 JabberPoint ..> Accessor : uses
-JabberPoint ..> XMLAccessor : uses
 JabberPoint ..> AccessorSelector : selects strategy
+JabberPoint ..> StyleManager : initializes
 MenuController ..> AccessorSelector : selects strategy
 AccessorSelector ..> Accessor : returns
 XMLAccessor ..> Slide : creates

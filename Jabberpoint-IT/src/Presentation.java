@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -13,20 +14,33 @@ import java.util.ArrayList;
  * @version 1.6 2014/05/16 Sylvia Stuurman
  */
 
-public class Presentation {
+public class Presentation implements SlideChangeSubject {
 	private String showTitle; // title of the presentation
 	private ArrayList<Slide> showList = null; // an ArrayList with Slides
 	private int currentSlideNumber = 0; // the slidenummer of the current Slide
-	private SlideViewerComponent slideViewComponent = null; // the viewcomponent of the Slides
+	private final List<SlideChangeListener> slideChangeListeners = new ArrayList<>();
 
 	public Presentation() {
-		slideViewComponent = null;
 		clear();
 	}
 
-	public Presentation(SlideViewerComponent slideViewerComponent) {
-		this.slideViewComponent = slideViewerComponent;
-		clear();
+	@Override
+	public void addSlideChangeListener(SlideChangeListener listener) {
+		if (listener != null && !slideChangeListeners.contains(listener)) {
+			slideChangeListeners.add(listener);
+		}
+	}
+
+	@Override
+	public void removeSlideChangeListener(SlideChangeListener listener) {
+		slideChangeListeners.remove(listener);
+	}
+
+	private void notifySlideChangeListeners() {
+		Slide current = getCurrentSlide();
+		for (SlideChangeListener listener : slideChangeListeners) {
+			listener.slideChanged(this, current);
+		}
 	}
 
 	public int getSize() {
@@ -39,10 +53,7 @@ public class Presentation {
 
 	public void setTitle(String nt) {
 		showTitle = nt;
-	}
-
-	public void setShowView(SlideViewerComponent slideViewerComponent) {
-		this.slideViewComponent = slideViewerComponent;
+		notifySlideChangeListeners();
 	}
 
 	// give the number of the current slide
@@ -53,9 +64,7 @@ public class Presentation {
 	// change the current slide number and signal it to the window
 	public void setSlideNumber(int number) {
 		currentSlideNumber = number;
-		if (slideViewComponent != null) {
-			slideViewComponent.update(this, getCurrentSlide());
-		}
+		notifySlideChangeListeners();
 	}
 
 	// go to the previous slide unless your at the beginning of the presentation
@@ -88,7 +97,7 @@ public class Presentation {
 		if (number < 0 || number >= getSize()){
 			return null;
 	    }
-			return (Slide)showList.get(number);
+			return showList.get(number);
 	}
 
 	// Give the current slide
